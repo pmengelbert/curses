@@ -1,3 +1,6 @@
 CFLAGS=-Wall -g -lncurses
 
-all: curses
+all: snake
+
+clean:
+	rm -rf ./snake
