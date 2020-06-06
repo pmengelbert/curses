@@ -150,22 +150,22 @@ snake *new_snake(int length, int x, int y) {
     return s;
 }
 
-void snake_display(snake *s, WINDOW *w)
+void snake_display(snake *s)
 {
     int x, y;
-    wclear(w);
+    erase();
 
     apples_print(apples, num_apples);
     segment *cur = s->head;
     while(cur) {
         x = cur->pos.x;
         y = cur->pos.y;
-        mvwprintw(w, y, x, "#");
+        mvprintw(y, x, "#");
         cur = cur->next;
     }
 
 
-    wrefresh(w);
+    refresh();
 }
 
 void you_died(snake *s) {
@@ -227,28 +227,33 @@ int snake_advance(snake *s, WINDOW *w, int c) {
     }
 
 
-    position p[2];
-    p[NEW].x = x; p[NEW].y = y;
-    while(cur->next) {
-        p[OLD] = cur->pos;
-        cur->pos = p[NEW];
-        p[NEW] = p[OLD];
-        cur = cur->next;
+    segment *tail = cur;
+    segment *prev;
+    while (tail->next) {
+        prev = tail;
+        tail = tail->next;
     }
-    cur->pos = p[NEW];
 
-    snake_display(s, w);
+    prev->next = NULL;
+    tail->pos.x = x;
+    tail->pos.y = y;
+    tail->next = s->head;
+    s->head = tail;
+
+    snake_display(s);
 
     int u;
     if((u = gets_apple(x, y))) {
         s->length++;
         segment *new_tail = malloc(sizeof(segment));
-        cur->next = new_tail;
+        prev->next = new_tail;
         apples[u] = new_apple();
         if(num_apples + 1 < MAX_APPLES) {
             apples[num_apples] = new_apple();
             num_apples++;
         }
+
+        if(speed_in_microseconds > 100000) speed_in_microseconds -= 50000;
     }
 
     return 1;
@@ -289,7 +294,7 @@ int main(int argc, char *argv[])
     y = my / 2;
 
     snake *s = new_snake(16, x, y);
-    snake_display(s, stdscr);
+    snake_display(s);
 
     size_t size = 2;
     char *c = calloc(size + 1, sizeof(char));
