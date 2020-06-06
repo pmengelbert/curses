@@ -171,9 +171,6 @@ void snake_display(snake *s, WINDOW *w)
 void you_died(snake *s) {
     mvprintw(40,40, "you died!\n");
     getch();
-    destroy_snake(s);
-    endwin();
-    exit(1);
 }
 
 int collision(snake *s, int x, int y) {
@@ -198,7 +195,7 @@ int gets_apple(int x, int y) {
     return 0;
 }
 
-void snake_advance(snake *s, WINDOW *w, int c) {
+int snake_advance(snake *s, WINDOW *w, int c) {
     int x, y;
 
     segment *cur = s->head;
@@ -208,24 +205,25 @@ void snake_advance(snake *s, WINDOW *w, int c) {
     switch(c) {
         case LEFT:
             x -= 1;
-            if(x == cur->next->pos.x) return;
+            if(x == cur->next->pos.x) return 1;
             break;
         case RIGHT:
             x += 1; 
-            if(x == cur->next->pos.x) return;
+            if(x == cur->next->pos.x) return 1;
             break;
         case UP:
             y -= 1;
-            if(y == cur->next->pos.y) return;
+            if(y == cur->next->pos.y) return 1;
             break;
         case DOWN:
             y += 1;
-            if(y == cur->next->pos.y) return;
+            if(y == cur->next->pos.y) return 1;
             break;
     }
 
     if(collision(s, x, y)) {
         you_died(s);
+        return 0;
     }
 
 
@@ -252,6 +250,8 @@ void snake_advance(snake *s, WINDOW *w, int c) {
             num_apples++;
         }
     }
+
+    return 1;
 }
 
 void destroy_snake(snake *s) {
@@ -276,6 +276,7 @@ void apples_print(apple apples[], int len) {
 
 int main(int argc, char *argv[])
 {
+    set_conio_terminal_mode();
     initscr();
     nonl();
     intrflush(stdscr, FALSE);
@@ -292,13 +293,12 @@ int main(int argc, char *argv[])
 
     size_t size = 2;
     char *c = calloc(size + 1, sizeof(char));
-    set_conio_terminal_mode();
     int dir = RIGHT;
 
     while(*c != 'q') {
         *c = 0;
         while(!kbhit()) {
-            snake_advance(s, stdscr, dir);
+            if(!snake_advance(s, stdscr, dir)) goto cleanup;
             usleep(speed_in_microseconds);
         }
 
@@ -323,8 +323,12 @@ int main(int argc, char *argv[])
 
     }
 
+    goto cleanup;
+
+cleanup:
     destroy_snake(s);
     free(c);
-    int i = endwin();
-    return i;
+    clear();
+    endwin();
+    exit(0);
 }
